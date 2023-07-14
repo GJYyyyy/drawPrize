@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>模拟大乐透</title>
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+
+            body {
+                padding: 8px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
+
+            h1,
+            h3,
+            h4,
+            h5 {
+                text-align: center;
+            }
+
+            input[type='number'] {
+                width: 60px;
+                height: 30px;
+                padding: 4px;
+            }
+
+            h5 {
+                display: flex;
+                align-items: center;
+            }
+            #rule {
+                display: inline-block;
+                width: 20px;
+                height: 20px;
+                border-radius: 50%;
+                border: 1px solid black;
+                font-size: 12px;
+                margin: 0 4px;
+                cursor: pointer;
+            }
+
+            #actions > div {
+                display: flex;
+                justify-content: center;
+                width: 100%;
+                margin: 4px 0;
+            }
+
+            #start,
+            #pause,
+            #restart {
+                border: 1px solid black;
+                background-color: transparent;
+                width: 60px;
+                height: 30px;
+                border-radius: 4px;
+                margin: 0 4px;
+            }
+
+            hr {
+                width: 100%;
+                margin: 12px 0;
+            }
+
+            #desc {
+                text-align: center;
+            }
+        </style>
+    </head>
+
+    <body>
+        <!-- 参数区域 -->
+        <h1>你能中头奖吗</h1>
+        <h5>模拟大乐透<span id="rule">?</span></h5>
+        <hr />
+        <div id="actions">
+            <div>
+                <label for="startAge">几岁开始抽：</label>
+                <input type="number" id="startAge" value="18" /><span>岁</span
+                ><br />
+            </div>
+            <div>
+                <label for="stopAge">几岁停止抽：</label>
+                <input type="number" id="stopAge" value="80" /><span>岁</span
+                ><br />
+            </div>
+            <div>
+                <label for="interval">每秒抽几次：</label>
+                <input
+                    type="number"
+                    id="interval"
+                    value="100"
+                    min="1"
+                    max="1000"
+                /><span>次</span><br />
+            </div>
+            <div>
+                <button id="start">开始</button>
+                <button id="pause" disabled>暂停</button>
+                <button id="restart" disabled>再来一次</button>
+            </div>
+        </div>
+        <hr />
+        <div id="desc"></div>
+        <hr />
+
+        <script src="./Dlt.js"></script>
+        <script>
+            const dlt = new Dlt();
+            const drawPrize = dlt.drawPrize();
+            const $startAgeInput = document.getElementById('startAge');
+            const $stopAgeInput = document.getElementById('stopAge');
+            const $intervalInput = document.getElementById('interval');
+            const $startBtn = document.getElementById('start');
+            const $pauseBtn = document.getElementById('pause');
+            const $restartBtn = document.getElementById('restart');
+            const $rule = document.getElementById('rule');
+            const $desc = document.getElementById('desc');
+
+            let pauseFlag = false,
+                restartFlag = false;
+
+            function formatStr(data) {
+                let str = '';
+                for (let k in data) {
+                    let v = data[k];
+                    if (k === '中奖详情') {
+                        let _str = '\r\n-----\r\n';
+
+                        for (let kk in v) {
+                            let vv = v[kk];
+                            _str += `${kk}(${vv.prizeAmount}元): ${vv.prizeCount}次\r\n`;
+                        }
+
+                        str += `${k}: ${_str}\r\n`;
+                    } else str += `${k}: ${v}\r\n`;
+                }
+                return str;
+            }
+
+            let result;
+            function circle() {
+                requestAnimationFrame(() => {
+                    setTimeout(() => {
+                        result = drawPrize.next();
+                        // console.log(result.value);
+                        if (result.done || result.value === undefined) {
+                            alert(`恭喜你还活着时抽中一等奖！`);
+                            restartFlag = true;
+                            $restartBtn.disabled = false;
+                            $pauseBtn.disabled = true;
+                            return;
+                        }
+                        if (
+                            $stopAgeInput.value - $startAgeInput.value <=
+                            parseFloat(result.value['花费时间'])
+                        ) {
+                            alert('你咽气了也没抽中一等奖。');
+                            restartFlag = true;
+                            $restartBtn.disabled = false;
+                            $pauseBtn.disabled = true;
+                            return;
+                        }
+                        if (pauseFlag) return;
+                        $desc.innerText = formatStr(result.value);
+                        circle();
+                    }, 1000 / parseFloat($intervalInput.value));
+                });
+            }
+
+            $rule.onclick = () => {
+                alert(
+                    '规则：\r\n开奖日期：每周一、三、六\r\n默认在每次开奖前购买彩票\r\n默认每次只购买一注(2元)'
+                );
+            };
+
+            $startBtn.onclick = () => {
+                pauseFlag = false;
+                circle();
+                $startAgeInput.disabled = true;
+                $stopAgeInput.disabled = true;
+                $intervalInput.disabled = true;
+                $startBtn.disabled = true;
+                $pauseBtn.disabled = false;
+                $restartBtn.disabled = true;
+            };
+            $pauseBtn.onclick = () => {
+                pauseFlag = true;
+                $startAgeInput.disabled = false;
+                $stopAgeInput.disabled = false;
+                $intervalInput.disabled = false;
+                $startBtn.disabled = false;
+                $pauseBtn.disabled = true;
+                $restartBtn.disabled = false;
+            };
+            $restartBtn.onclick = () => {
+                location.reload();
+            };
+        </script>
+    </body>
+</html>
